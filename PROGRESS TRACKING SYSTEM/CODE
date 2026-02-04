@@ -1,0 +1,85 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv('/content/dataset1.csv')
+df['subject_id'] = df['subject'].astype('category').cat.codes
+
+def get_user_input():
+    subjects = input("Enter the subjects separated by commas (e.g., Maths, Science, English): ").split(',')
+    subjects = [subject.strip() for subject in subjects]
+    quiz_scores = {}
+    for subject in subjects:
+        scores = input(f"Enter the quiz scores for {subject} separated by commas (e.g., 10, 50, 85): ").split(',')
+        scores = [int(score.strip()) for score in scores if score.strip().isdigit()]
+        quiz_scores[subject] = sum(scores)
+    return quiz_scores
+
+def suggest_study_material(subject):
+    material_row = df[df['subject'].str.lower() == subject.lower()]
+
+    if not material_row.empty:
+        book = material_row['book_names'].values[0]
+        youtube = material_row['youtube_links'].values[0]
+        link = material_row['study_material_link'].values[0]
+
+        return {'book': book, 'link': link, 'youtube': youtube}
+    else:
+        return {'book': 'No Book Available', 'link': 'No Link Available', 'youtube': 'No YouTube Video Available'}
+
+def generate_timetable(user_scores):
+    subjects = user_scores.keys()
+    sorted_subjects = sorted(subjects, key=lambda x: user_scores[x])
+    timetable = {}
+    days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+    for i, day in enumerate(days):
+        timetable[day] = sorted_subjects[i % len(sorted_subjects)]
+
+    return timetable
+
+def plot_performance(scores):
+    subjects = list(scores.keys())
+    score_values = list(scores.values())
+
+    plt.figure(figsize=(8, 5))
+    plt.bar(subjects, score_values, color='orange')
+    plt.xlabel('Subjects')
+    plt.ylabel('Quiz Scores')
+    plt.title('Student Performance in Subjects')
+    plt.grid(True)
+    plt.show()
+
+def provide_feedback(user_scores):
+    feedback = {}
+    for subject, score in user_scores.items():
+        if score < 50:
+            feedback[subject] = f"Needs improvement in {subject}"
+        elif score < 75:
+            feedback[subject] = f"Good job in {subject}, but there's room for improvement."
+        else:
+            feedback[subject] = f"Well done in {subject}!"
+    return feedback
+
+user_scores = get_user_input()
+
+lowest_subject = min(user_scores, key=user_scores.get)
+print(f"\nThe subject with the lowest performance is: {lowest_subject}")
+
+material = suggest_study_material(lowest_subject)
+print(f"\nSuggested Study Material for {lowest_subject}:")
+print(f"Book: {material['book']}")
+print(f"Online Resource: {material['link']}")
+print(f"YouTube Video: {material['youtube']}")
+
+feedback_notes = provide_feedback(user_scores)
+print("\nFeedback Notes:")
+for subject, note in feedback_notes.items():
+    print(note)
+
+timetable = generate_timetable(user_scores)
+print("\nWeekly Study Timetable:")
+for day, subject in timetable.items():
+    print(f"{day}: {subject}")
+
+plot_performance(user_scores)
